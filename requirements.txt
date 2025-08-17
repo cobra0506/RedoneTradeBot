@@ -1,0 +1,7 @@
+pybit
+websocket-client
+kivy
+pandas
+numpy
+requests
+optuna

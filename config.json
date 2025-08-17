@@ -1,0 +1,31 @@
+{
+  "api": {
+    "demo_key": "your_demo_key_here",
+    "demo_secret": "your_demo_secret_here",
+    "real_key": "your_real_key_here",
+    "real_secret": "your_real_secret_here"
+  },
+  "defaults": {
+    "time_frames": ["1", "5", "15"],
+    "candle_limit": 50,
+    "start_balance": 1000,
+    "max_positions": 5,
+    "fee_rate": 0.00075,
+    "slippage_pct": 0.001,
+    "latency_ms": 100
+  },
+  "strategies": {
+    "srsi": {
+      "buy_threshold": 20,
+      "sell_threshold": 80,
+      "use_cross": false,
+      "use_trend_filter": true
+    },
+    "grid": {
+      "num_levels": 10,
+      "spacing_pct": 2,
+      "num_symbols": 5,
+      "breakout_offset_pct": 1
+    }
+  }
+}
