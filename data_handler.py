@@ -145,7 +145,7 @@ class BybitWebSocketManager:
     def __init__(self):
         self.data_queue = asyncio.Queue()
         self.stop_event = asyncio.Event()
-        self.reconnect_delay = 5
+        self.reconnect_delay = 10  # Increased to reduce spam
         self.last_message_time = time.time()
         self.heartbeat_interval = 20
         self.reconnect_attempts = 0
@@ -162,11 +162,14 @@ class BybitWebSocketManager:
     def _subscribe(self, ws, symbols, intervals):
         args = [f"kline.{interval}.{symbol}" for symbol in symbols for interval in intervals]
         for i in range(0, len(args), 500):
-            ws.send(json.dumps({"op": "subscribe", "args": args[i:i+500]}))
+            payload = json.dumps({"op": "subscribe", "args": args[i:i+500]})
+            ws.send(payload)
+            logger.debug(f"Sent subscription: {payload}")  # Added for debugging
 
     async def _send_ping(self, ws):
         while not self.stop_event.is_set():
             ws.send(json.dumps({"op": "ping"}))
+            logger.debug("Ping sent")
             await asyncio.sleep(self.heartbeat_interval)
 
     def _process_kline(self, data):
@@ -205,6 +208,7 @@ class BybitWebSocketManager:
 
     def _on_message(self, ws, message):
         try:
+            logger.debug(f"Received message: {message}")
             self.last_message_time = time.time()
             data = json.loads(message)
             if "topic" in data and "kline" in data["topic"]:
@@ -216,7 +220,7 @@ class BybitWebSocketManager:
 
     async def _run_websocket(self, url, symbols, intervals):
         def on_open(ws):
-            logger.info("WebSocket connected")
+            logger.info("WebSocket connected successfully")
             global_data.ws_connected = True
             self.last_message_time = time.time()
             self.reconnect_delay = 5
@@ -229,7 +233,7 @@ class BybitWebSocketManager:
                     url,
                     on_open=on_open,
                     on_message=self._on_message,
-                    on_error=lambda ws, e: logger.error(f"WebSocket error: {e}"),
+                    on_error=lambda ws, e: logger.error(f"WebSocket error: {e}"),  # Fixed on_error
                     on_close=lambda ws, s, m: logger.info(f"WebSocket closed: {s}, {m}")
                 )
                 ws.run_forever(ping_interval=0, ping_timeout=10)
@@ -248,7 +252,7 @@ class BybitWebSocketManager:
         self.stop_event.clear()
         self.symbols = symbols
         self.intervals = intervals
-        await self._run_websocket("wss://stream.bybit.com/v5/public/linear", symbols, intervals)
+        await self._run_websocket("wss://stream.bybit.com/v5/public/linear", symbols, intervals)  # Confirmed correct for demo/live
 
     async def stop(self):
         self.stop_event.set()

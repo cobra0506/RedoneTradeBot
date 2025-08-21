@@ -2,13 +2,15 @@ import threading
 from collections import deque
 import json
 
+POSITION_FILE = 'positions.json'  # JSON file for persisting positions
+
 # Load config
 with open('config.json', 'r') as f:
     config = json.load(f)
 
 demo = True  # Toggle demo/live (overridden by mode)
 time_frames = config['defaults']['time_frames']
-symbols = []  # Filled dynamically
+symbols = ['BTCUSDT']  # Filled dynamically
 candle_data = {}  # symbol -> tf -> deque(maxlen=candle_limit)
 symbol_locks = {}  # symbol -> threading.Lock
 ws_connected = False

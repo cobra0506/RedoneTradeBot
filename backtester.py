@@ -2,11 +2,10 @@ import optuna
 import pandas as pd
 import time
 from copy import deepcopy
-from utils import logger
+from utils import logger, select_top_symbols, get_data_snapshot  # Moved select_top_symbols here
 from data_handler import get_historical_data
 from orders import open_long, open_short, close_long, close_short  # Mode='backtest' sim
 from global_data import config, symbols, time_frames, positions, current_balance
-from strategy_runner import select_top_symbols  # For dynamic selection
 
 def simulate_time_step(strategy, all_candles, ts, selected_symbols):
     # Update 'current' candles for this timestamp across all symbols (forward-fill if missing)
@@ -41,7 +40,7 @@ def simulate_time_step(strategy, all_candles, ts, selected_symbols):
     # Update PnL for open positions (sim price movement)
     peak_balance = initial_balance = current_balance  # Track for drawdown
     for symbol in list(positions.keys()):
-        if symbol not in market_data or '1' not in market_data[symbol]['candles_by_tf']:
+        if symbol not in market_data or '1' in market_data[symbol]['candles_by_tf']:
             continue
         current_price = market_data[symbol]['candles_by_tf']['1'][-1]['close']
         pos = positions[symbol]
@@ -56,7 +55,7 @@ def simulate_time_step(strategy, all_candles, ts, selected_symbols):
             close_func(symbol)
     
     # Update global metrics (example; expand as needed)
-    current_total = current_balance + sum(p['pnl'] for p in positions.values())
+    current_total = current_balance + sum(p['pnl'] for p in positions.values() if 'pnl' in p)
     peak_balance = max(peak_balance, current_total)
     drawdown = (peak_balance - current_total) / peak_balance if peak_balance > 0 else 0
 

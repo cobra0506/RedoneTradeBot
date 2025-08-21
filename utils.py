@@ -10,6 +10,8 @@ import csv
 from collections import Counter
 import global_data
 from global_data import POSITION_FILE  # Assume 'positions.json'
+from copy import deepcopy
+from indicators import calc_atr, calc_adx, calc_sma
 
 # Ensure logs directory
 os.makedirs('logs', exist_ok=True)
@@ -25,7 +27,7 @@ def setup_logging():
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.WARNING)
     console_handler.setFormatter(formatter)
-    logger.add_handler(console_handler)
+    logger.addHandler(console_handler)  # Fixed: addHandler
 
     # bot.log (INFO+ , rotate 5MB, 3 backups)
     bot_log_handler = logging.handlers.RotatingFileHandler(
@@ -36,7 +38,7 @@ def setup_logging():
     )
     bot_log_handler.setLevel(logging.INFO)
     bot_log_handler.setFormatter(formatter)
-    logger.add_handler(bot_log_handler)
+    logger.addHandler(bot_log_handler)  # Fixed
 
     # error.log (WARNING+, rotate 2MB, 5 backups)
     error_log_handler = logging.handlers.RotatingFileHandler(
@@ -47,7 +49,7 @@ def setup_logging():
     )
     error_log_handler.setLevel(logging.WARNING)
     error_log_handler.setFormatter(formatter)
-    logger.add_handler(error_log_handler)
+    logger.addHandler(error_log_handler)  # Fixed
 
     # debug.log (DEBUG, rotate 1MB, 2 backups)
     debug_log_handler = logging.handlers.RotatingFileHandler(
@@ -58,7 +60,7 @@ def setup_logging():
     )
     debug_log_handler.setLevel(logging.DEBUG)
     debug_log_handler.setFormatter(formatter)
-    logger.add_handler(debug_log_handler)
+    logger.addHandler(debug_log_handler)  # Fixed
 
     logger.info("Logging setup complete")
     return logger
@@ -155,3 +157,31 @@ def log_opened_position(symbol, action, price, amount_usd):
 def show_error_gui(message):
     logger.error(message)
     # In main.py, update self.error_label.text = message (already in the GUI code)
+
+# Moved from strategy_runner.py to break circular import
+def select_top_symbols(num_symbols):
+    snapshot = get_data_snapshot()
+    scores = []
+    for symbol in global_data.symbols:
+        candles = snapshot.get(symbol, {}).get('15', [])  # Use 15m for volatility
+        if len(candles) < 21:
+            continue
+        atr = calc_atr(candles)
+        adx = calc_adx(candles)
+        sma = calc_sma(candles, 21)
+        current_price = candles[-1]['close']
+        trend = 'up' if current_price > sma else 'down' if current_price < sma else 'flat'
+        if trend == 'flat':
+            continue  # Skip flat
+        score = atr * adx if adx > 0 else 0
+        scores.append((symbol, score, trend))
+    # Sort by score descending, take top num_symbols with up/down trend
+    sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)[:num_symbols]
+    return [s[0] for s in sorted_scores]
+
+def get_data_snapshot():
+    snapshot = {}
+    for symbol in global_data.symbols:
+        with global_data.symbol_locks[symbol]:
+            snapshot[symbol] = deepcopy(global_data.candle_data.get(symbol, {}))
+    return snapshot

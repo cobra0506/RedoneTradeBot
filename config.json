@@ -1,9 +1,9 @@
 {
   "api": {
-    "demo_key": "your_demo_key_here",
-    "demo_secret": "your_demo_secret_here",
-    "real_key": "your_real_key_here",
-    "real_secret": "your_real_secret_here"
+    "demo_key": "kKnXjxCtTGjt5z6ZCW",
+    "demo_secret": "lAQrC1lhVO3LlcdJjgql2DVULwDU8vrPLhsW",
+    "real_key": "haDWOpVxizbFALF7P6",
+    "real_secret": "eKMPWIdlpX9dgFDFKQtNLr96NCAJbmUDVnbG"
   },
   "defaults": {
     "time_frames": ["1", "5", "15"],

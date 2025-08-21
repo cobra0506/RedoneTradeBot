@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
-from utils import logger
 
 def calc_rsi(candles, period=14, return_series=False):
     if len(candles) < period:
-        logger.warning("Insufficient data for RSI")
+        from utils import logger; logger.warning("Insufficient data for RSI")
         return None
     closes = pd.Series([c['close'] for c in candles])
     delta = closes.diff()
@@ -29,32 +28,29 @@ def calc_stoch_rsi(candles, period=14, k=3, d=3, return_series=False):
 
 def calc_sma(candles, period=9):
     if len(candles) < period:
+        from utils import logger; logger.warning("Insufficient data for SMA")
         return None
     closes = pd.Series([c['close'] for c in candles])
     return closes.rolling(window=period).mean().iloc[-1]
 
-def calculate_adx(candles, period=14):
+def calc_adx(candles, period=14):
     if len(candles) < period + 1:
-        logger.debug(f"Not enough candles ({len(candles)}) for ADX calculation")
+        from utils import logger; logger.warning("Insufficient data for ADX")
         return None
-
     df = pd.DataFrame(candles)
     df['high'] = pd.to_numeric(df['high'], errors='coerce')
     df['low'] = pd.to_numeric(df['low'], errors='coerce')
     df['close'] = pd.to_numeric(df['close'], errors='coerce')
 
-    # True Range (TR)
     df['prev_close'] = df['close'].shift()
     df['tr'] = df[['high', 'prev_close']].max(axis=1) - df[['low', 'prev_close']].min(axis=1)
 
-    # Directional Movement (+DM, -DM)
     df['up_move'] = df['high'] - df['high'].shift()
     df['down_move'] = df['low'].shift() - df['low']
 
     df['plus_dm'] = np.where((df['up_move'] > df['down_move']) & (df['up_move'] > 0), df['up_move'], 0)
     df['minus_dm'] = np.where((df['down_move'] > df['up_move']) & (df['down_move'] > 0), df['down_move'], 0)
 
-    # Wilder’s smoothing
     atr = df['tr'].ewm(alpha=1/period, min_periods=period).mean()
     plus_di = 100 * df['plus_dm'].ewm(alpha=1/period, min_periods=period).mean() / atr
     minus_di = 100 * df['minus_dm'].ewm(alpha=1/period, min_periods=period).mean() / atr
@@ -64,11 +60,10 @@ def calculate_adx(candles, period=14):
 
     return adx.iloc[-1] if not np.isnan(adx.iloc[-1]) else None
 
-def calculate_atr(candles, period=14):
+def calc_atr(candles, period=14):
     if len(candles) < period + 1:
-        logger.debug(f"Not enough candles ({len(candles)}) for ATR calculation")
+        from utils import logger; logger.warning("Insufficient data for ATR")
         return None
-
     df = pd.DataFrame(candles)
     df['high'] = pd.to_numeric(df['high'], errors='coerce')
     df['low'] = pd.to_numeric(df['low'], errors='coerce')
